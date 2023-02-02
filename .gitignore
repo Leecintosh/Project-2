@@ -1,2 +1,5 @@
 .idea/
 spacetime_crawler_data/
+__pycache__/
+frontier_state/
+output.txt
