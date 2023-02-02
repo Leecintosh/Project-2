@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlparse
 from lxml import etree, html
 import time
+from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +42,16 @@ class Crawler:
 
         Suggested library: lxml
         """
-        outputLinks = []
+        url = url_data["url"]
         content = url_data["content"]
-        if content:
-            links = html.fromstring(content if type(content) == str else content.decode('utf-8'))
-            for _, _, link, _ in links.iterlinks():
-                if self.is_valid(link):
-                    outputLinks.append(link)
-        return outputLinks
+        if not content or not self.is_valid(url):
+            return []
+        parser = html.HTMLParser(recover=True, encoding="utf-8")
 
+        root = html.fromstring(content, parser=parser)
+        links = root.xpath("//a/@href")
+        outputLinks = [urljoin(url, link) for link in links if self.is_valid(urljoin(url, link))]
+        return outputLinks
     def is_valid(self, url):
         """
         Function returns True or False based on whether the url has to be fetched or not. This is a great place to
