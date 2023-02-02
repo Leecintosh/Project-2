@@ -4,8 +4,9 @@ from urllib.parse import urlparse
 from lxml import etree, html
 from urllib.parse import urljoin
 import time
-
+import urllib.parse
 logger = logging.getLogger(__name__)
+
 
 class Crawler:
     """
@@ -65,8 +66,26 @@ class Crawler:
         in this method
         """
         parsed = urlparse(url)
+        history_trap = ["t", "time", "timestamp", "p", "page"]
+        for i in history_trap:
+            if i in parsed.query:
+                return False
+            else:
+                return True
+        # print(parsed)
         if parsed.scheme not in set(["http", "https"]):
             return False
+
+        # print(parsed)
+        # # Check if the URL contains a search query parameter
+        # if "q" in parsed.query or "query" in parsed.query or "s" in parsed.query:
+        #     return False
+
+        if len(url) < 2000:
+            return True
+        else:
+            print("too long url")
+
         try:
             return ".ics.uci.edu" in parsed.hostname \
                    and not re.match(".*\.(css|js|bmp|gif|jpe?g|ico" + "|png|tiff?|mid|mp2|mp3|mp4" \
