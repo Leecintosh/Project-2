@@ -65,26 +65,42 @@ class Crawler:
         filter out crawler traps. Duplicated urls will be taken care of by frontier. You don't need to check for duplication
         in this method
         """
+
         parsed = urlparse(url)
-        history_trap = ["t", "time", "timestamp", "p", "page"]
+        '''
+        check history trap
+        '''
+        history_trap = ["time", "timestamp", "page"]
         for i in history_trap:
             if i in parsed.query:
                 return False
-            else:
-                return True
-        # print(parsed)
+        '''
+        http://example.com/search?q=dynamic+urls&id=abcd1234
+        or "&" in parsed.query
+        or "=" in parsed.query or
+        or "&" in parsed.query
+        '''
+        if "=" in parsed.query or '+' in parsed.query:
+            return False
+
+        if parsed.path is not None:
+            temp = parsed.path.split('/')
+            subdirectory = [subdir for subdir in temp if subdir]
+            if len(subdirectory) != 0:
+                for i in range(len(subdirectory) // 2):
+                    if subdirectory[i] != subdirectory[-i - 1]:
+                        break
+                else:
+                    return False
+
+        if parsed.fragment is None:
+            return False
+
         if parsed.scheme not in set(["http", "https"]):
             return False
 
-        # print(parsed)
-        # # Check if the URL contains a search query parameter
-        # if "q" in parsed.query or "query" in parsed.query or "s" in parsed.query:
-        #     return False
-
-        if len(url) < 2000:
-            return True
-        else:
-            print("too long url")
+        if len(url) > 2000:
+            return False
 
         try:
             return ".ics.uci.edu" in parsed.hostname \
