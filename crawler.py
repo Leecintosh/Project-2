@@ -1,6 +1,8 @@
 import logging
 import re
 from urllib.parse import urlparse
+from lxml import etree, html
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,10 @@ class Crawler:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+        # check time out
+        r = requests.get(url, timeout=5)
+        if r.status_code == 200:
+            return True
         try:
             return ".ics.uci.edu" in parsed.hostname \
                    and not re.match(".*\.(css|js|bmp|gif|jpe?g|ico" + "|png|tiff?|mid|mp2|mp3|mp4" \
@@ -58,8 +64,10 @@ class Crawler:
                                     + "|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|epub|dll|cnf|tgz|sha1" \
                                     + "|thmx|mso|arff|rtf|jar|csv" \
                                     + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower())
-
         except TypeError:
             print("TypeError for ", parsed)
             return False
+        # check for timeout
+
+
 
