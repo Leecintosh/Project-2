@@ -2,6 +2,7 @@ import logging
 import re
 from urllib.parse import urlparse
 from lxml import etree, html
+from urllib.parse import urljoin
 import time
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,41 @@ class Crawler:
         Suggested library: lxml
         """
         outputLinks = []
+        url = url_data["url"]
         content = url_data["content"]
-        if content:
-            links = html.fromstring(content if type(content) == str else content.decode('utf-8'))
-            for _, _, link, _ in links.iterlinks():
-                if self.is_valid(link):
-                    outputLinks.append(link)
+        if not content or not self.is_valid(url):
+            return []
+        if content[0:5] == '<?xml':
+            content = content[content.find('>') + 1 : -1]
+        parser = html.HTMLParser(recover=True, encoding="utf-8")
+        try:
+            root = html.fromstring(content, parser=parser)
+            links = root.xpath("//a/@href")
+            outputLinks = [urljoin(url, link) for link in links if self.is_valid(urljoin(url, link))]
+        except etree.ParserError:
+            pass
+
+        # outputLinks = []
+        # content = url_data["content"].strip()
+        # content = content if type(content) == str else content.decode()
+        # if content[0:5] == '<?xml':
+        #     content = content[content.find('>') + 1 : -1]
+        # if content:
+        #     try:
+        #         links = html.fromstring(content)
+        #         for _, _, link, _ in links.iterlinks():
+        #             if self.is_valid(link):
+        #                 outputLinks.append(link)
+        #     except ValueError as e:
+        #         print(type(content) == str)
+        #         print(content)
+        #         raise e
+        #     except etree.ParserError:
+        #         pass
+        #     except Exception as e:
+        #         print(f'type(content) = {type(content) == str}')
+        #         print(content)
+
         return outputLinks
 
     def is_valid(self, url):
