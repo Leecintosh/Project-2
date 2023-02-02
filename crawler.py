@@ -1,6 +1,8 @@
 import logging
 import re
 from urllib.parse import urlparse
+from lxml import etree, html
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,12 @@ class Crawler:
         Suggested library: lxml
         """
         outputLinks = []
+        content = url_data["content"]
+        if content:
+            links = html.fromstring(content if type(content) == str else content.decode('utf-8'))
+            for _, _, link, _ in links.iterlinks():
+                if self.is_valid(link):
+                    outputLinks.append(link)
         return outputLinks
 
     def is_valid(self, url):
