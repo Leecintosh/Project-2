@@ -48,7 +48,7 @@ class Crawler:
         if not content or not self.is_valid(url):
             return []
         if content[0:5] == '<?xml':
-            content = content[content.find('>') + 1 : -1]
+            content = content[content.find('>') + 1: -1]
         parser = html.HTMLParser(recover=True, encoding="utf-8")
         try:
             root = html.fromstring(content, parser=parser)
@@ -56,28 +56,6 @@ class Crawler:
             outputLinks = [urljoin(url, link) for link in links if self.is_valid(urljoin(url, link))]
         except etree.ParserError:
             pass
-
-        # outputLinks = []
-        # content = url_data["content"].strip()
-        # content = content if type(content) == str else content.decode()
-        # if content[0:5] == '<?xml':
-        #     content = content[content.find('>') + 1 : -1]
-        # if content:
-        #     try:
-        #         links = html.fromstring(content)
-        #         for _, _, link, _ in links.iterlinks():
-        #             if self.is_valid(link):
-        #                 outputLinks.append(link)
-        #     except ValueError as e:
-        #         print(type(content) == str)
-        #         print(content)
-        #         raise e
-        #     except etree.ParserError:
-        #         pass
-        #     except Exception as e:
-        #         print(f'type(content) = {type(content) == str}')
-        #         print(content)
-
         return outputLinks
 
     def is_valid(self, url):
