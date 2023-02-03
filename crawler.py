@@ -58,10 +58,10 @@ class Crawler:
             links = root.xpath("//a/@href")
             for link in links:
                 joined_url = urljoin(url, link)
-                self.stats.add_downloaded_url(joined_url)
                 if not self.is_valid(joined_url):
                     self.stats.add_trap(joined_url)
                 else:
+                    self.stats.add_downloaded_url(joined_url)
                     self.stats.add_subdomain(joined_url)
                     outputLinks.append(joined_url)
         except etree.ParserError:
@@ -148,41 +148,42 @@ class Statistic:
         self.subdomains[subdomain].add(url)
 
     def save(self, path : str = "analysis.txt"):
+        # question 1
         with open(path, 'w', encoding='utf-8') as f:
-            # question 1
             f.write("1. Keep track of the subdomains that it visited, and count how many different URLs it has processed from each of those subdomains\n")
             for subdomain in self.subdomains:
-                f.write(f'{subdomain} {len(self.subdomains[subdomain])}\n')
+                f.write(f'\t{subdomain} {len(self.subdomains[subdomain])}\n')
 
+        # question 2
         with open(path, 'a', encoding='utf-8') as f:
-            # question 2
             f.write("\n2. Find the page with the most valid out links (of all pages given to your crawler). Out Links are the number of links that are present on a particular webpage\n")
             f.write(f'the page with the most valid out links: {self.page_valid[0]}\n')
 
+        # question 3
         with open(path, 'a', encoding='utf-8') as f:
-            # question 3
-            f.write("\n3. List of downloaded URLs and identified traps")
+            f.write("\n3. List of downloaded URLs and identified traps\n")
             f.write(f'the list of downloaded links:\n')
             counter = 0
             for url in self.downloaded_url:
-                try:
-                    f.write(f'{url}\n')
-                except UnicodeEncodeError as e:
-                    print(url)
-                    print(e)
+                f.write(f'\t{url}\n')
                 if counter == 1000:
                     f.flush()
                     counter = 0
 
-
+            counter = 0
             f.write(f'the list of identified traps:\n')
             for trap in self.traps:
-                f.write(f'{trap}\n')
+                f.write(f'\t{trap}\n')
+                if counter == 1000:
+                    f.flush()
+                    counter = 0
 
-            # question 4
+        # question 4
+        with open(path, 'a', encoding='utf-8') as f:
             f.write("\n4. What is the longest page in terms of number of words? (HTML markup doesn’t count as words)\n")
             ## YOUR CODE HERE
 
-            # question 5
+        # question 5
+        with open(path, 'a', encoding='utf-8') as f:
             f.write("\n5. What are the 50 most common words in the entire set of pages? (Ignore English stop words, which can be found, (https://www.ranks.nl/stopwords)\n")
             ## YOUR CODE HERE
