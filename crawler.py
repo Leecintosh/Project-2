@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlparse
 from lxml import etree, html
 from urllib.parse import urljoin
+from collections import defaultdict
 import time
 import urllib.parse
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ class Crawler:
     def __init__(self, frontier, corpus):
         self.frontier = frontier
         self.corpus = corpus
+        self.stats = Statistic()
 
     def start_crawling(self):
         """
@@ -54,9 +56,17 @@ class Crawler:
         try:
             root = html.fromstring(content, parser=parser)
             links = root.xpath("//a/@href")
-            outputLinks = [urljoin(url, link) for link in links if self.is_valid(urljoin(url, link))]
+            for link in links:
+                joined_url = urljoin(url, link)
+                if not self.is_valid(joined_url):
+                    self.stats.add_trap(joined_url)
+                else:
+                    self.stats.add_downloaded_url(joined_url)
+                    self.stats.add_subdomain(joined_url)
+                    outputLinks.append(joined_url)
         except etree.ParserError:
             pass
+        self.stats.record_page_valid(url, len(outputLinks))
         return outputLinks
 
     def is_valid(self, url):
@@ -114,3 +124,56 @@ class Crawler:
             print("TypeError for ", parsed)
             return False
 
+
+class Statistic:
+    def __init__(self):
+        self.subdomains = defaultdict(set)
+        self.page_valid = ['', -1]
+        self.downloaded_url = set()
+        self.traps = set()
+
+    def record_page_valid(self, page : str, number : int):
+        if number > self.page_valid[1]:
+            self.page_valid[0] = page
+            self.page_valid[1] = number
+
+    def add_downloaded_url(self, url : str):
+        self.downloaded_url.add(url)
+
+    def add_trap(self, url : str):
+        self.traps.add(url)
+
+    def add_subdomain(self, url : str):
+        subdomain = urlparse(url).netloc
+        self.subdomains[subdomain].add(url)
+
+    def save(self, path : str = "analysis.txt"):
+        with open(path, 'w') as f:
+            # question 1
+            f.write("1. Keep track of the subdomains that it visited, and count how many different URLs it has processed from each of those subdomains\n")
+            for subdomain in self.subdomains:
+                f.write(f'{subdomain} {len(self.subdomains[subdomain])}\n')
+
+            # question 2
+            f.write("\n2. Find the page with the most valid out links (of all pages given to your crawler). Out Links are the number of links that are present on a particular webpage\n")
+            f.write(f'the page with the most valid out links: {self.page_valid[0]}\n')
+
+            # question 3
+            f.write("\n3. List of downloaded URLs and identified traps")
+            f.write(f'the list of downloaded links:\n')
+            for url in self.downloaded_url:
+                try:
+                    f.write(f'{url}\n')
+                except UnicodeEncodeError as e:
+                    print(url)
+            f.write(f'the list of identified traps:\n')
+            for trap in self.traps:
+                f.write(f'{trap}\n')
+
+            # question 4
+            f.write("\n4. What is the longest page in terms of number of words? (HTML markup doesn’t count as words)\n")
+            ## YOUR CODE HERE
+
+            # question 5
+            f.write("\n5. What are the 50 most common words in the entire set of pages? (Ignore English stop words, which can be found, (https://www.ranks.nl/stopwords)\n")
+            ## YOUR CODE HERE
