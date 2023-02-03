@@ -58,10 +58,10 @@ class Crawler:
             links = root.xpath("//a/@href")
             for link in links:
                 joined_url = urljoin(url, link)
+                self.stats.add_downloaded_url(joined_url)
                 if not self.is_valid(joined_url):
                     self.stats.add_trap(joined_url)
                 else:
-                    self.stats.add_downloaded_url(joined_url)
                     self.stats.add_subdomain(joined_url)
                     outputLinks.append(joined_url)
         except etree.ParserError:
@@ -148,24 +148,33 @@ class Statistic:
         self.subdomains[subdomain].add(url)
 
     def save(self, path : str = "analysis.txt"):
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             # question 1
             f.write("1. Keep track of the subdomains that it visited, and count how many different URLs it has processed from each of those subdomains\n")
             for subdomain in self.subdomains:
                 f.write(f'{subdomain} {len(self.subdomains[subdomain])}\n')
 
+        with open(path, 'a', encoding='utf-8') as f:
             # question 2
             f.write("\n2. Find the page with the most valid out links (of all pages given to your crawler). Out Links are the number of links that are present on a particular webpage\n")
             f.write(f'the page with the most valid out links: {self.page_valid[0]}\n')
 
+        with open(path, 'a', encoding='utf-8') as f:
             # question 3
             f.write("\n3. List of downloaded URLs and identified traps")
             f.write(f'the list of downloaded links:\n')
+            counter = 0
             for url in self.downloaded_url:
                 try:
                     f.write(f'{url}\n')
                 except UnicodeEncodeError as e:
                     print(url)
+                    print(e)
+                if counter == 1000:
+                    f.flush()
+                    counter = 0
+
+
             f.write(f'the list of identified traps:\n')
             for trap in self.traps:
                 f.write(f'{trap}\n')
