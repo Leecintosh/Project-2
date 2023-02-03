@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # Instantiates corpus object with the given cmd arg
     # corpus = Corpus(sys.argv[1])
-    corpus = Corpus("D:\\web_dump_zipfile\\spacetime_crawler_data")
+    corpus = Corpus("spacetime_crawler_data")
 
     # Registers a shutdown hook to save frontier state upon unexpected shutdown
     # atexit.register(frontier.save_frontier)
