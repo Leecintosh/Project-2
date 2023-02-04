@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 
 from lxml import etree, html
 from urllib.parse import urljoin
-from collections import defaultdict
 import time
 import urllib.parse
 logger = logging.getLogger(__name__)
@@ -130,7 +129,7 @@ class Crawler:
 
 class Statistic:
     def __init__(self):
-        self.subdomains = defaultdict(set)
+        self.subdomains = dict()
         self.page_valid = ['', -1]
         self.downloaded_url = set()
         self.traps = set()
@@ -150,7 +149,10 @@ class Statistic:
 
     def add_subdomain(self, url : str):
         subdomain = urlparse(url).netloc
-        self.subdomains[subdomain].add(url)
+        if subdomain in self.subdomains:
+            self.subdomains[subdomain].add(url)
+        else:
+            self.subdomains[subdomain] = {url}
 
     def count_words(self, parsed_content):
         return len(parsed_content.text_content().split())
