@@ -1,8 +1,10 @@
 import logging
 import re
 from urllib.parse import urlparse
+
 from lxml import etree, html
 from urllib.parse import urljoin
+from collections import defaultdict
 import time
 import urllib.parse
 logger = logging.getLogger(__name__)
@@ -17,6 +19,7 @@ class Crawler:
     def __init__(self, frontier, corpus):
         self.frontier = frontier
         self.corpus = corpus
+        self.stats = Statistic()
 
     def start_crawling(self):
         """
@@ -54,9 +57,19 @@ class Crawler:
         try:
             root = html.fromstring(content, parser=parser)
             links = root.xpath("//a/@href")
-            outputLinks = [urljoin(url, link) for link in links if self.is_valid(urljoin(url, link))]
+            for link in links:
+                joined_url = urljoin(url, link)
+                if not self.is_valid(joined_url):
+                    self.stats.add_trap(joined_url)
+                else:
+                    self.stats.add_downloaded_url(joined_url)
+                    self.stats.add_subdomain(joined_url)
+                    outputLinks.append(joined_url)
+            self.stats.add_longest_page(url, self.stats.count_words(root))
+            self.stats.add_all_words(root)
         except etree.ParserError:
             pass
+        self.stats.record_page_valid(url, len(outputLinks))
         return outputLinks
 
     def is_valid(self, url):
@@ -114,3 +127,115 @@ class Crawler:
             print("TypeError for ", parsed)
             return False
 
+
+class Statistic:
+    def __init__(self):
+        self.subdomains = defaultdict(set)
+        self.page_valid = ['', -1]
+        self.downloaded_url = set()
+        self.traps = set()
+        self.longest_page = ['', -1]
+        self.all_words = []
+
+    def record_page_valid(self, page : str, number : int):
+        if number > self.page_valid[1]:
+            self.page_valid[0] = page
+            self.page_valid[1] = number
+
+    def add_downloaded_url(self, url : str):
+        self.downloaded_url.add(url)
+
+    def add_trap(self, url : str):
+        self.traps.add(url)
+
+    def add_subdomain(self, url : str):
+        subdomain = urlparse(url).netloc
+        self.subdomains[subdomain].add(url)
+
+    def count_words(self, parsed_content):
+        return len(parsed_content.text_content().split())
+
+    def add_longest_page(self, url : str, count : int):
+        if count > self.longest_page[1]:
+            self.longest_page[0] = url
+            self.longest_page[1] = count
+
+    def add_all_words(self, parsed_content):
+        text = parsed_content.text_content().lower()
+        tokens = []
+        word = ""
+        for char in text:
+            if char.isalnum():
+                word += char
+            else:
+                if len(word) > 1:
+                    tokens.append(word)
+                    word = ""
+        if len(word) > 1:
+            tokens.append(word)
+        self.all_words.extend(tokens)
+
+    def save(self, path : str = "analysis.txt"):
+        # question 1
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write("1. Keep track of the subdomains that it visited, and count how many different URLs it has processed from each of those subdomains\n")
+            for subdomain in self.subdomains:
+                f.write(f'\t{subdomain} {len(self.subdomains[subdomain])}\n')
+
+        # question 2
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write("\n2. Find the page with the most valid out links (of all pages given to your crawler). Out Links are the number of links that are present on a particular webpage\n")
+            f.write(f'the page with the most valid out links: {self.page_valid[0]}\n')
+
+        # question 3
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write("\n3. List of downloaded URLs and identified traps\n")
+            f.write(f'the list of downloaded links:\n')
+            counter = 0
+            for url in self.downloaded_url:
+                f.write(f'\t{url}\n')
+                if counter == 1000:
+                    f.flush()
+                    counter = 0
+
+            counter = 0
+            f.write(f'the list of identified traps:\n')
+            for trap in self.traps:
+                f.write(f'\t{trap}\n')
+                if counter == 1000:
+                    f.flush()
+                    counter = 0
+
+        # question 4
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write("\n4. What is the longest page in terms of number of words? (HTML markup doesn’t count as words)\n")
+            f.write(f'the longest page: {self.longest_page[0]} with {self.longest_page[1]} words\n')
+
+
+        # question 5
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write("\n5. What are the 50 most common words in the entire set of pages? (Ignore English stop words, which can be found, (https://www.ranks.nl/stopwords)\n")
+            stop_words = {'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', "aren't", 'as', 'at', 'be', 'because',
+                          'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', "can't", 'cannot', 'could', "couldn't", 'did', "didn't", 'do',
+                          'does', "doesn't", 'doing', "don't", 'down', 'during', 'each', 'few', 'for', 'from', 'further', 'had', "hadn't", 'has', "hasn't",
+                          'have', "haven't", 'having', 'he', "he'd", "he'll", "he's", 'her', 'here', "here's", 'hers', 'herself', 'him', 'himself', 'his',
+                          'how', "how's", 'i', "i'd", "i'll", "i'm", "i've", 'if', 'in', 'into', 'is', "isn't", 'it', "it's", 'its', 'itself', "let's", 'me',
+                          'more', 'most', "mustn't", 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our',
+                          'ours', 'ourselves', 'out', 'over', 'own', 'same', "shan't", 'she', "she'd", "she'll", "she's", 'should', "shouldn't", 'so', 'some',
+                          'such', 'than', 'that', "that's", 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', "there's", 'these', 'they', "they'd",
+                          "they'll", "they're", "they've", 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', "wasn't", 'we', "we'd",
+                          "we'll", "we're", "we've", 'were', "weren't", 'what', "what's", 'when', "when's", 'where', "where's", 'which', 'while', 'who', "who's",
+                          'whom', 'why', "why's", 'with', "won't", 'would', "wouldn't", 'you', "you'd", "you'll", "you're", "you've", 'your', 'yours', 'yourself', 'yourselves'}
+            word_freq = {}
+            for word in self.all_words:
+                if word in stop_words:
+                    continue
+                if word not in word_freq:
+                    word_freq[word] = 1
+                else:
+                    word_freq[word] += 1
+
+            sorted_word_freq = [(k, v) for k, v in sorted(word_freq.items(), key=lambda item: item[1], reverse=True)]
+            most_common_words = sorted_word_freq[:50]
+            for word, freq in most_common_words:
+                f.write(f'\t{word} {freq}\n')

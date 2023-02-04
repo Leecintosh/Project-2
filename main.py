@@ -26,3 +26,5 @@ if __name__ == "__main__":
     # Instantiates a crawler object and starts crawling
     crawler = Crawler(frontier, corpus)
     crawler.start_crawling()
+
+    crawler.stats.save()
