@@ -165,7 +165,7 @@ class Statistic:
         tokens = []
         word = ""
         for char in text:
-            if char.isalnum():
+            if char.isalpha():
                 word += char
             else:
                 if len(word) > 1:
@@ -209,7 +209,7 @@ class Statistic:
         # question 4
         with open(path, 'a', encoding='utf-8') as f:
             f.write("\n4. What is the longest page in terms of number of words? (HTML markup doesn’t count as words)\n")
-            f.write(f'the longest page: {self.longest_page[0]} with {self.longest_page[1]} words\n')
+            f.write(f'\nthe longest page: {self.longest_page[0]} with {self.longest_page[1]} words\n')
 
 
         # question 5
